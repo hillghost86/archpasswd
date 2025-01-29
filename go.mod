@@ -1,4 +1,4 @@
-module github.com/hillghost86/archpasswd
+module github.com/hillghost86/archpasswd // 包名
 
 go 1.21
 

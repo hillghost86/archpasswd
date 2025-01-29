@@ -7,7 +7,7 @@ import (
 	"path/filepath"
 	"time"
 
-	archpasswd "archpasswd/check"
+	archpasswd "github.com/hillghost86/archpasswd/check"
 )
 
 // TestArchivePassword 测试单个密码
