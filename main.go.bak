@@ -1,0 +1,208 @@
+package archive
+
+import (
+	"bytes"
+	"crypto/aes"
+	"crypto/cipher"
+	"crypto/sha256"
+	"errors"
+	"io"
+	"os"
+)
+
+// 常量定义
+const (
+	ZIP_HEADER_SIZE      = 12
+	RAR5_SALT_SIZE       = 16
+	RAR5_VERIFY_SIZE     = 8
+	SEVENZIP_HEADER_SIZE = 32
+)
+
+// ArchiveType 定义压缩文件类型
+type ArchiveType int
+
+const (
+	TYPE_ZIP ArchiveType = iota
+	TYPE_RAR
+	TYPE_7Z
+)
+
+// PasswordChecker 接口
+type PasswordChecker interface {
+	CheckPassword(data []byte, password string) bool
+}
+
+// ZipCrypto 实现ZIP加密算法
+type ZipCrypto struct {
+	keys [3]uint32
+}
+
+func (z *ZipCrypto) initKeys(password []byte) {
+	// ZIP加密初始化
+	z.keys[0] = 0x12345678
+	z.keys[1] = 0x23456789
+	z.keys[2] = 0x34567890
+
+	for _, b := range password {
+		z.updateKeys(b)
+	}
+}
+
+func (z *ZipCrypto) updateKeys(b byte) byte {
+	z.keys[0] = crc32Update(z.keys[0], b)
+	z.keys[1] = z.keys[1] + (z.keys[0] & 0xff)
+	z.keys[1] = z.keys[1]*134775813 + 1
+	z.keys[2] = crc32Update(z.keys[2], byte(z.keys[1]>>24))
+	return byte(z.keys[2] | 2)
+}
+
+// 添加 CRC32 表
+var crcTable = [256]uint32{
+	0x00000000, 0x77073096, 0xee0e612c, 0x990951ba,
+	// ... 为简洁起见，这里省略了完整的CRC32表
+	// 你可以从标准库 hash/crc32 中复制完整的表
+}
+
+func crc32Update(crc uint32, b byte) uint32 {
+	return ((crc >> 8) & 0x00FFFFFF) ^ uint32(crcTable[(crc^uint32(b))&0xFF])
+}
+
+// CheckZipPassword 验证ZIP密码
+func CheckZipPassword(data []byte, password string) bool {
+	if len(data) < ZIP_HEADER_SIZE {
+		return false
+	}
+
+	crypto := &ZipCrypto{}
+	crypto.initKeys([]byte(password))
+
+	// 验证加密头
+	for i := 0; i < ZIP_HEADER_SIZE; i++ {
+		if byte(crypto.updateKeys(data[i])) != data[i] {
+			return false
+		}
+	}
+	return true
+}
+
+// RAR5Crypto 实现RAR5加密验证
+type RAR5Crypto struct {
+	salt       []byte
+	iterations uint32
+}
+
+func (r *RAR5Crypto) deriveKey(password string) []byte {
+	// 使用PBKDF2-HMAC-SHA256
+	key := make([]byte, 32)
+	// 简化版的密钥派生
+	h := sha256.New()
+	h.Write([]byte(password))
+	h.Write(r.salt)
+	key = h.Sum(nil)
+
+	// 多次迭代以增加计算复杂度
+	for i := uint32(0); i < r.iterations; i++ {
+		h.Reset()
+		h.Write(key)
+		key = h.Sum(nil)
+	}
+	return key
+}
+
+// CheckRarPassword 验证RAR密码
+func CheckRarPassword(data []byte, password string) bool {
+	if len(data) < RAR5_SALT_SIZE+RAR5_VERIFY_SIZE {
+		return false
+	}
+
+	rar := &RAR5Crypto{
+		salt:       data[:RAR5_SALT_SIZE],
+		iterations: 1000, // RAR5默认迭代次数
+	}
+
+	key := rar.deriveKey(password)
+	verifyData := data[RAR5_SALT_SIZE : RAR5_SALT_SIZE+RAR5_VERIFY_SIZE]
+
+	// 验证密钥
+	h := sha256.New()
+	h.Write(key)
+	calculatedVerify := h.Sum(nil)[:RAR5_VERIFY_SIZE]
+
+	return bytes.Equal(calculatedVerify, verifyData)
+}
+
+// SevenZipCrypto 实现7z加密验证
+type SevenZipCrypto struct {
+	salt []byte
+}
+
+func (s *SevenZipCrypto) deriveKey(password string) []byte {
+	// 7z使用自定义的密钥派生函数
+	h := sha256.New()
+	h.Write([]byte(password))
+	h.Write(s.salt)
+	return h.Sum(nil)
+}
+
+// Check7zPassword 验证7z密码
+func Check7zPassword(data []byte, password string) bool {
+	if len(data) < SEVENZIP_HEADER_SIZE {
+		return false
+	}
+
+	sz := &SevenZipCrypto{
+		salt: data[:16],
+	}
+
+	key := sz.deriveKey(password)
+
+	// AES-256解密验证
+	block, _ := aes.NewCipher(key)
+	mode := cipher.NewCBCDecrypter(block, data[16:32])
+
+	decrypted := make([]byte, 16)
+	mode.CryptBlocks(decrypted, data[32:48])
+
+	// 验证解密结果
+	expectedPattern := []byte{0x00, 0x00, 0x00, 0x00}
+	return bytes.Equal(decrypted[:4], expectedPattern)
+}
+
+// ArchivePasswordChecker 统一的密码检查器
+type ArchivePasswordChecker struct {
+	Type ArchiveType
+}
+
+// NewArchivePasswordChecker 创建新的密码检查器
+func NewArchivePasswordChecker(t ArchiveType) *ArchivePasswordChecker {
+	return &ArchivePasswordChecker{Type: t}
+}
+
+// CheckPassword 验证密码
+func (a *ArchivePasswordChecker) CheckPassword(filePath string, password string) (bool, error) {
+	// 读取文件头部数据
+	file, err := os.Open(filePath)
+	if err != nil {
+		return false, err
+	}
+	defer file.Close()
+
+	// 读取足够大的头部数据进行验证
+	headerSize := 64 // 足够大的缓冲区
+	header := make([]byte, headerSize)
+	_, err = io.ReadFull(file, header)
+	if err != nil && err != io.EOF {
+		return false, err
+	}
+
+	switch a.Type {
+	case TYPE_ZIP:
+		return CheckZipPassword(header, password), nil
+	case TYPE_RAR:
+		return CheckRarPassword(header, password), nil
+	case TYPE_7Z:
+		return Check7zPassword(header, password), nil
+	default:
+		return false, errors.New("unsupported archive type")
+	}
+}

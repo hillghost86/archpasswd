@@ -1,0 +1,55 @@
+# Go specific
+*.exe
+*.exe~
+*.dll
+*.so
+*.dylib
+*.test
+*.out
+*.prof
+*.trace
+go.work
+
+# Dependency directories
+vendor/
+bin/
+
+# IDE specific
+.idea/
+.vscode/
+*.swp
+*.swo
+.DS_Store
+Thumbs.db
+
+# Project specific
+/testdata/
+/dist/
+/build/
+*.log
+*.tmp
+*.bat
+
+# Debug files
+debug/
+__debug_bin
+
+# Test coverage
+coverage.txt
+coverage.html
+
+# Binary files
+*.zip
+*.rar
+*.7z
+*.tar
+*.gz
+*.bz2
+*.xz
+*.001
+*.part*
+
+# Environment files
+.env
+.env.local
+*.env.*
