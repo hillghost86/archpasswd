@@ -1,4 +1,4 @@
-module archpasswd
+module github.com/hillghost86/archpasswd
 
 go 1.21
 
