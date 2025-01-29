@@ -43,9 +43,9 @@ func (c *zipChecker) CheckPassword(filePath, password string) (bool, string, err
 		//fmt.Fprintf(os.Stderr, "尝试打开文件: %s\n", f.Name)
 		f.SetPassword(password)
 		rc, err := f.Open()
-		if err != nil {
-			fmt.Fprintf(os.Stderr, "打开文件失败: %v\n", err)
-		}
+		// if err != nil {
+		// 	fmt.Fprintf(os.Stderr, "打开文件失败: %v\n", err)
+		// }
 		if err != nil {
 			if strings.Contains(err.Error(), "password") {
 				//fmt.Fprintf(os.Stderr, "密码错误\n")

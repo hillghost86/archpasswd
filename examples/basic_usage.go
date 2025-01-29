@@ -34,14 +34,14 @@ func main() {
 		log.Fatalf("获取工作目录失败: %v", err)
 	}
 
-	filePath := filepath.Join(pwd, "testdata", "test666.7z")
+	filePath := filepath.Join(pwd, "testdata", "test7z999-64.zip")
 	fmt.Println(filePath)
 
 	// 定义要使用的文件类型
-	var fileType archpasswd.Format = archpasswd.TYPE_7Z
+	var fileType archpasswd.Format = archpasswd.TYPE_ZIP
 
 	// 测试密码列表，包含正确密码 "666"
-	passwords := []string{"885", "666", "65418", "23423asdfgasdf", "998"}
+	passwords := []string{"885", "666", "65418", "23423asdfgasdf", "998", "999"}
 
 	startTime := time.Now()
 	totalChecked := 0
