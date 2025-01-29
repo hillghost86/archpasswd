@@ -1,4 +1,4 @@
-module github.com/hillghost86/archpasswd // 包名
+module github.com/hillghost86/archpasswd  // 确保这行完全正确
 
 go 1.21
 
