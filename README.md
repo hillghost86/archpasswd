@@ -85,12 +85,7 @@ func (c *sevenZipChecker) CheckPassword(data []byte, password string) bool
 - 对于大文件，每次密码验证可能需要约100ms
 
 ## 版本历史
-
-### v0.1.0
-- 初始版本
-- 支持7z格式文件
-- 支持空密码检测
-- 性能优化
+ 见[CHANGELOG.md](CHANGELOG.md)
 
 ## 许可证
 
