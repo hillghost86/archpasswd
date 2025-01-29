@@ -14,7 +14,7 @@ ArchPasswd 是一个用于检查压缩文件密码的 Go 语言库。
 ## 安装
 
 ```bash 
-go get github.com/yourusername/archpasswd
+go get github.com/hillghost86/archpasswd
 ```
 
 ## 使用示例
@@ -24,10 +24,10 @@ package main
 
 import (
 	"fmt"
-	"github.com/yourusername/archpasswd"
+	"github.com/hillghost86/archpasswd"
 )
 
-func main() {
+func main() {       
     // 创建一个7z格式检查器
     checker, err := archpasswd.NewChecker(archpasswd.TYPE_7Z, "test.7z")
         if err != nil {
