@@ -1,4 +1,4 @@
-package archpasswd
+package check
 
 import "errors"
 

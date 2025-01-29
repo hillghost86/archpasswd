@@ -7,7 +7,7 @@ import (
 	"path/filepath"
 	"time"
 
-	"archpasswd/archpasswd"
+	archpasswd "archpasswd/check"
 )
 
 // TestArchivePassword 测试单个密码

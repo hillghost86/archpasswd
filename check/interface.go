@@ -1,4 +1,4 @@
-package archpasswd
+package check
 
 // Format 压缩文件格式
 type Format int
