@@ -3,7 +3,6 @@ package archpasswd
 import (
 	"fmt"
 	"io"
-	"os"
 	"strings"
 
 	"github.com/yeka/zip"
@@ -77,6 +76,6 @@ func (c *zipChecker) CheckPassword(filePath, password string) (bool, string, err
 
 	}
 
-	fmt.Fprintln(os.Stderr, "所有文件尝试完毕，未找到正确密码")
+	//fmt.Fprintln(os.Stderr, "所有文件尝试完毕，未找到正确密码")
 	return false, password, nil
 }
